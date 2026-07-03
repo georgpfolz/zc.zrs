@@ -14,7 +14,7 @@
 """Monitor ZRS servers
 """
 
-import ConfigParser
+import configparser
 import datetime
 import logging
 import logging.config
@@ -38,7 +38,7 @@ def main(args=None, testing=False):
     global logger, monitor_logger
     logger = logging.getLogger(__name__)
     monitor_logger = logging.getLogger('monitor')    
-    parser = ConfigParser.RawConfigParser()
+    parser = configparser.RawConfigParser()
     parser.read(config_path)
     data = dict(
         [(section, dict(parser.items(section)))
@@ -109,7 +109,7 @@ class Cluster(Base):
             for address_string in options['secondaries'].split()
             ]
         thread = self.thread = threading.Thread(target=self.run, name=name)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
 
     def run(self):
@@ -124,7 +124,7 @@ class Cluster(Base):
 
             ts_seconds = 0
             
-            while not event.isSet():
+            while not event.is_set():
                 now = time.time()
                 next += delta_seconds
                 wait = next - now
@@ -133,7 +133,7 @@ class Cluster(Base):
                     wait = next - now
 
                 time.sleep(wait)
-                if event.isSet():
+                if event.is_set():
                     break
 
                 try:

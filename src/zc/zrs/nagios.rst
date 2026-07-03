@@ -29,9 +29,10 @@ addresses as positional arguments.
 
     Load the monitor:
 
-    >>> import pkg_resources
-    >>> nagios = pkg_resources.load_entry_point(
-    ...     'zc.zrs', 'console_scripts', 'zrs-nagios')
+    >>> import importlib.metadata
+    >>> [entry_point] = importlib.metadata.entry_points(
+    ...     group='console_scripts', name='zrs-nagios')
+    >>> nagios = entry_point.load()
 
     Start some servers:
 

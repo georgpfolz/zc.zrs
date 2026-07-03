@@ -30,11 +30,11 @@ Let's create a primary storage:
 Now, we can use this just like any other storage:
 
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
     >>> db = DB(ps)
     >>> conn = db.open()
     >>> ob = conn.root()
-    >>> ob.x = persistent.dict.PersistentDict()
+    >>> ob.x = persistent.mapping.PersistentMapping()
     >>> commit()
 
 We can connect to it to get data that have been committed.  We're
@@ -150,7 +150,7 @@ If we commit more data, however, the additional data will be made
 available:
 
     >>> ob = ob.x
-    >>> ob.x = persistent.dict.PersistentDict()
+    >>> ob.x = persistent.mapping.PersistentMapping()
     >>> commit()
 
     >>> tid, status, user, description, extension = connection.read()[1]
@@ -194,7 +194,7 @@ Let's save the transaction id and then commit some new data:
 
     >>> saved_tid = tid
     >>> ob = conn.root()
-    >>> ob.y = persistent.dict.PersistentDict()
+    >>> ob.y = persistent.mapping.PersistentMapping()
     >>> commit()
 
 Of course, we'll see this new data:

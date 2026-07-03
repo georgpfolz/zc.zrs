@@ -32,13 +32,11 @@ import ZODB.tests.testblob
 import ZODB.tests.testFileStorage
 import ZODB.tests.StorageTestBase
 import ZODB.utils
-from six.moves import cPickle
 import logging
 import os
 import pickle
 import re
 import shutil
-import six
 import struct
 import subprocess
 import sys
@@ -66,21 +64,21 @@ def scan_from_back():
 Create the database:
 
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
 
     >>> fs = ZODB.FileStorage.FileStorage('Data.fs')
     >>> db = DB(fs)
     >>> conn = db.open()
 
     >>> for i in range(100):
-    ...     conn.root()[i] = persistent.dict.PersistentDict()
+    ...     conn.root()[i] = persistent.mapping.PersistentMapping()
     ...     commit()
 
 Now, be evil, and muck up the beginning: :)
 
     >>> _ = fs._file.seek(12)
     >>> _ = fs._file.write(b'\xff'*8)
-    >>> conn.root()[100] = persistent.dict.PersistentDict()
+    >>> conn.root()[100] = persistent.mapping.PersistentMapping()
     >>> commit()
 
 If we try to iterate from the beginning, we'll get an error:
@@ -149,7 +147,7 @@ Now, we'll create a special transport that will output data when it is called:
     ...     def writeSequence(self, message):
     ...         message = message[1] # cheat. :)
     ...         if message:
-    ...             message = cPickle.loads(message)
+    ...             message = pickle.loads(message)
     ...             if type(message) is tuple:
     ...                 message = message[0]
     ...         print(message)
@@ -633,12 +631,12 @@ def leaking_file_handles_when_secondaries_disconnect():
     >>> oldrc = sys.getrefcount(zc.zrs.primary.FileStorageIterator)
 
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
     >>> db = DB(ps)
     >>> conn = db.open()
     >>> ob = conn.root()
     >>> for i in range(10):
-    ...   ob.x = persistent.dict.PersistentDict()
+    ...   ob.x = persistent.mapping.PersistentMapping()
     ...   commit()
 
     >>> for i in range(10):
@@ -664,7 +662,7 @@ def close_writes_new_transactions():
     We want close to try to write pending transactions, even if it
     means that close will take a long time.
 
-    >>> import ZODB.FileStorage, zc.zrs.primary, persistent.dict
+    >>> import ZODB.FileStorage, zc.zrs.primary, persistent.mapping
     >>> fs = ZODB.FileStorage.FileStorage('Data.fs')
     >>> ps = zc.zrs.primary.Primary(fs, ('', 8000), reactor)
     INFO zc.zrs.primary:
@@ -694,7 +692,7 @@ def close_writes_new_transactions():
     >>> time.sleep(.1)
 
     >>> for i in range(300):
-    ...     ob[i] = persistent.dict.PersistentDict()
+    ...     ob[i] = persistent.mapping.PersistentMapping()
 
     >>> commit()
     >>> committed += 1
@@ -732,11 +730,11 @@ def secondary_gives_a_tid_that_is_too_high():
     Opening Data.fs ('', 8000)
 
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
     >>> db = DB(ps)
     >>> conn = db.open()
     >>> ob = conn.root()
-    >>> ob.x = persistent.dict.PersistentDict()
+    >>> ob.x = persistent.mapping.PersistentMapping()
     >>> commit()
 
     >>> import ZODB.utils
@@ -786,20 +784,20 @@ def scan_control_stops_scans_on_client_disconnects():
     example, to limit impact on the server if a large scan is required.
 
     >>> fs = ZODB.FileStorage.FileStorage('Data.fs')
-    >>> import persistent.dict
+    >>> import persistent.mapping
     >>> db = ZODB.DB(fs)
     >>> conn = db.open()
     >>> ob = conn.root()
     >>> for i in range(100):
-    ...     ob[i] = persistent.dict.PersistentDict()
+    ...     ob[i] = persistent.mapping.PersistentMapping()
     ...     commit()
     >>> tid1 = ob._p_serial
     >>> for i in range(100, 200):
-    ...     ob[i] = persistent.dict.PersistentDict()
+    ...     ob[i] = persistent.mapping.PersistentMapping()
     ...     commit()
     >>> tid2 = ob._p_serial
     >>> for i in range(200, 300):
-    ...     ob[i] = persistent.dict.PersistentDict()
+    ...     ob[i] = persistent.mapping.PersistentMapping()
     ...     commit()
 
     >>> ps = zc.zrs.primary.Primary(fs, ('', 8000), reactor)
@@ -1066,7 +1064,7 @@ class MessageTransport:
     def write(self, data):
         self.cond.acquire()
         self.data += data
-        self.cond.notifyAll()
+        self.cond.notify_all()
         self.cond.release()
 
     def writeSequence(self, data):
@@ -1134,13 +1132,13 @@ class PrimaryTransport(MessageTransport):
         data = MessageTransport.read(self)
         if raw:
             return data
-        return cPickle.loads(data)
+        return pickle.loads(data)
 
 class SecondaryTransport(MessageTransport):
 
     def send(self, data, raw=False):
         if not raw:
-            data = cPickle.dumps(data)
+            data = pickle.dumps(data)
         MessageTransport.send(self, data or b'')
 
     def fail(self):
@@ -1754,8 +1752,7 @@ def setUpNagios(test):
     for name in 'old', 'current':
         with open(name+'.fs', 'wb') as f:
             data = binascii.a2b_base64(globals()[name + '_base64'])
-            if six.PY3:
-                data = b'FS30' + data[4:]
+            data = b'FS30' + data[4:]
             f.write(data)
 
 def test_suite():

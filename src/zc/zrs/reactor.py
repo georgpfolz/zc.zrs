@@ -62,7 +62,7 @@ def reactor():
         from twisted.internet import reactor
         thread = threading.Thread(target=_run,
                                   args=(twisted.internet.reactor, ))
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
         atexit.register(shutdown)
 

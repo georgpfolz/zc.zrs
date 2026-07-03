@@ -13,9 +13,9 @@
 ##############################################################################
 
 from hashlib import md5
-from six import BytesIO
-from six.moves import cPickle
+from io import BytesIO
 import logging
+import pickle
 import os
 import sys
 import threading
@@ -140,7 +140,7 @@ class Primary(Base):
     def tpc_finish(self, *args):
         tid = self._storage.tpc_finish(*args)
         self._changed.acquire()
-        self._changed.notifyAll()
+        self._changed.notify_all()
         self._changed.release()
         return tid
 
@@ -269,7 +269,7 @@ class PrimaryProducer:
         self.consumer_event.set()
         thread = threading.Thread(target=run, args=(self.run, ),
                                   name='Producer(%s)' % peer)
-        thread.setDaemon(True)
+        thread.daemon = True
         thread.start()
         self.thread = thread
 
@@ -347,7 +347,7 @@ class PrimaryProducer:
             self.iterator.stop()
 
         picklerf = BytesIO()
-        pickler = cPickle.Pickler(picklerf, 1)
+        pickler = pickle.Pickler(picklerf, 1)
         pickler.fast = 1
         def dump(data):
             picklerf.seek(0)
@@ -542,13 +542,13 @@ class FileStorageIterator(ZODB.FileStorage.format.FileStorageFormatter):
     def stop(self):
         self._condition.acquire()
         self._stop = True
-        self._condition.notifyAll()
+        self._condition.notify_all()
         self._condition.release()
 
     def catch_up_then_stop(self):
         self._condition.acquire()
         self._catch_up_then_stop = True
-        self._condition.notifyAll()
+        self._condition.notify_all()
         self._condition.release()
 
     def __next__(self):
@@ -634,7 +634,7 @@ class FileStorageIterator(ZODB.FileStorage.format.FileStorageFormatter):
 
             pos += h.headerlen()
             if h.elen:
-                e = cPickle.loads(h.ext)
+                e = pickle.loads(h.ext)
             else:
                 e = {}
 
@@ -646,7 +646,7 @@ class FileStorageIterator(ZODB.FileStorage.format.FileStorageFormatter):
 
     def notify(self):
         self._condition.acquire()
-        self._condition.notifyAll()
+        self._condition.notify_all()
         self._condition.release()
 
 class RecordIterator(ZODB.FileStorage.format.FileStorageFormatter):
@@ -733,7 +733,7 @@ class ThreadCounter:
         finally:
             self.condition.acquire()
             self.count -= 1
-            self.condition.notifyAll()
+            self.condition.notify_all()
             self.condition.release()
 
     def wait(self, timeout):
@@ -748,7 +748,7 @@ class ThreadCounter:
 
 def is_blob_record(record):
     try:
-        return cPickle.loads(record) is ZODB.blob.Blob
+        return pickle.loads(record) is ZODB.blob.Blob
     except (MemoryError, KeyboardInterrupt, SystemExit):
         raise
     except Exception:

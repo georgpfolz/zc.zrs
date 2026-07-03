@@ -35,11 +35,11 @@ Let's create a primary storage:
 Now, we can use this just like any other storage:
 
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
     >>> db = DB(ps)
     >>> conn = db.open()
     >>> ob = conn.root()
-    >>> ob.x = persistent.dict.PersistentDict()
+    >>> ob.x = persistent.mapping.PersistentMapping()
     >>> commit()
 
 We can connect to it to get data that have been committed.  We're

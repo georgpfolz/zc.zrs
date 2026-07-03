@@ -12,8 +12,8 @@
 #
 ##############################################################################
 
-from six.moves import cPickle
 import logging
+import pickle
 from hashlib import md5
 import os
 import tempfile
@@ -129,7 +129,7 @@ class SecondaryProtocol(twisted.internet.protocol.Protocol):
 
         else:
             # Ordinary message
-            message_type, data = cPickle.loads(message)
+            message_type, data = pickle.loads(message)
             if message_type == 'T':
                 assert self._zrs_transaction is None
                 assert self.__record is None

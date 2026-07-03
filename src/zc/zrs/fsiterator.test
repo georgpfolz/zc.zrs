@@ -20,14 +20,14 @@ it.
 
     >>> import ZODB.FileStorage
     >>> from ZODB.DB import DB
-    >>> import persistent.dict
+    >>> import persistent.mapping
 
     >>> fs = ZODB.FileStorage.FileStorage('Data.fs')
     >>> db = DB(fs)
     >>> conn = db.open()
 
     >>> for i in range(10):
-    ...     conn.root()[i] = persistent.dict.PersistentDict()
+    ...     conn.root()[i] = persistent.mapping.PersistentMapping()
     ...     commit()
 
 We'll create a simple program that iterates over a file storage
@@ -59,9 +59,9 @@ printing some information.
     ...         self.condition = threading.Condition()
     ...         self.acquire = self.condition.acquire
     ...         self.release = self.condition.release
-    ...         self.notifyAll = self.condition.notifyAll
+    ...         self.notify_all = self.condition.notify_all
     ...         self.should_stop = False
-    ... 
+    ...
     ...     def wait(self):
     ...         self.event.set()
     ...         self.condition.wait()
@@ -69,7 +69,7 @@ printing some information.
     ...     def notify_and_wait(self):
     ...         self.event.clear()
     ...         self.acquire()
-    ...         self.notifyAll()
+    ...         self.notify_all()
     ...         self.release()
     ...         self.event.wait(5)
 
@@ -77,7 +77,7 @@ printing some information.
     >>> condition = Condition(event)
     >>> iterator = zc.zrs.primary.FileStorageIterator(fs, condition)
     >>> thread = threading.Thread(target=list, args=(iterator, event))
-    >>> thread.setDaemon(True)
+    >>> thread.daemon = True
 
     >>> thread.start(); _ = event.wait(5)
     2007-03-21 20:32:57.000000 [0]
@@ -94,12 +94,12 @@ printing some information.
 
 We can write additional data to the file storage:
 
-    >>> conn.root()[10] = persistent.dict.PersistentDict()
+    >>> conn.root()[10] = persistent.mapping.PersistentMapping()
     >>> commit()
 
-We won't see any changes in the iterator until we call notifyAll on
+We won't see any changes in the iterator until we call notify_all on
 the condition. (We'll use the helper function notify_and_wait, which
-calls notifyAll correctly and then waits on out event.
+calls notify_all correctly and then waits on out event.
 
     >>> condition.notify_and_wait()
     2007-03-21 20:33:08.000000 [0, 11]
@@ -112,7 +112,7 @@ If we pack the file storage:
 and write more data, we'll still see the data, even though the file
 storage is now using a new file:
 
-    >>> conn.root()[11] = persistent.dict.PersistentDict()
+    >>> conn.root()[11] = persistent.mapping.PersistentMapping()
     >>> commit()
     >>> condition.notify_and_wait()
     2007-03-21 20:33:09.000000 [0, 12]

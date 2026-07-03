@@ -129,7 +129,7 @@ Let's create a secondary secondary and commit some data to the primary storage.
     >>> transaction.commit()
 
     >>> conn.root()
-    {1: {}, 2: <ZODB.blob.Blob object at 0xb6463cec>}
+    {1: {}, 2: <ZODB.blob.Blob oid 0x02 in <ZODB.Connection.Connection>>}
 
 .. wait a little while to replicate
 
@@ -141,7 +141,7 @@ secondary:
     >>> db2 = ZODB.DB(secondary2)
     >>> conn2 = db2.open()
     >>> conn2.root()
-    {1: {}, 2: <ZODB.blob.Blob object at 0xb63c8c6c>}
+    {1: {}, 2: <ZODB.blob.Blob oid 0x02 in <ZODB.Connection.Connection>>}
 
     >>> conn.root()[2].open().read()
     b'some blob data'
