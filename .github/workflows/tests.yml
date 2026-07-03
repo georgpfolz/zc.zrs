@@ -2,6 +2,7 @@ name: tests
 on:
   push:
   pull_request:
+  workflow_dispatch:
   schedule:
     # Woechentlicher Lauf als Fruehwarnung, falls neue Releases von
     # ZODB/ZEO/Twisted die Kompatibilitaet brechen.
