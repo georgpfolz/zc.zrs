@@ -1288,7 +1288,7 @@ class BasePrimaryStorageTests(StorageTestBase.StorageTestBase):
 
         self._storage.close()
         reactor = self.globs['reactor']
-        self.assert_(not reactor._factories) # Make sure we're not listening
+        self.assertFalse(reactor._factories) # Make sure we're not listening
         setupstack.tearDown(self)
         self.globs.clear()
 
@@ -1798,8 +1798,10 @@ def test_suite():
             ),
         ))
 
-    def make(class_, *args):
-        s = unittest.makeSuite(class_, *args)
+    def make(class_, prefix="test"):
+        loader = unittest.TestLoader()
+        loader.testMethodPrefix = prefix
+        s = loader.loadTestsFromTestCase(class_)
         s.layer = ZODB.tests.util.MininalTestLayer(class_.__name__)
         suite.addTest(s)
 
