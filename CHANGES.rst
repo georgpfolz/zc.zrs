@@ -6,6 +6,26 @@ For earlier changes, see the `HISTORY.rst <HISTORY.rst>`_.
 4.0.0 (unreleased)
 ------------------
 
+- Reach compatibility with ZODB 6, ZEO 6 and current Twisted
+  (tested with Python 3.11, Zope 6.1 / ZODB 6.3, ZEO 6.2, Twisted 26.4).
+
+- Require Python >= 3.11.
+
+- Port ``zc.zrs.monitor`` to Python 3.
+
+- Replace deprecated threading APIs (``notifyAll``, ``setDaemon``,
+  ``isSet``) with their modern counterparts.
+
+- Drop the ``six`` dependency.
+
+- Convert ``zc`` to a native namespace package (PEP 420) so it
+  cooperates with modern releases of ``zc.lockfile``.
+
+- Replace ``setup.py`` with ``pyproject.toml``.
+
+- Fix packaging: the ``zc.zrs.xformstorage`` subpackage was missing
+  from wheels.
+
 - Add support for Python 3.8 and 3.9.
 
 - Reach compatibility with ZODB 5.6
