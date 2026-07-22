@@ -35,6 +35,7 @@ twisted.python.log.startLoggingWithObserver(log_twisted, setStdout=False)
 
 _shutdown_called = False
 _started = False
+_thread = None
 
 def _run(reactor):
     global _shutdown_called
@@ -51,7 +52,7 @@ def _run(reactor):
         #os._exit(os.EX_SOFTWARE)
 
 def reactor():
-    global _started
+    global _started, _thread
     if _started != os.getpid():
         if _started:
             # We're in a multiprocessing subprocess, likely in a test
@@ -60,10 +61,13 @@ def reactor():
 
         _started = os.getpid()
         from twisted.internet import reactor
-        thread = threading.Thread(target=_run,
-                                  args=(twisted.internet.reactor, ))
-        thread.daemon = True
-        thread.start()
+        _thread = threading.Thread(
+            target=_run,
+            args=(twisted.internet.reactor, ),
+            name='zc.zrs.reactor',
+            )
+        _thread.daemon = True
+        _thread.start()
         atexit.register(shutdown)
 
     return twisted.internet.reactor
@@ -72,13 +76,28 @@ def _shutdown(event):
     twisted.internet.reactor.stop()
     event.set()
 
+def _join_reactor_thread(timeout=60):
+    """Wait until the reactor thread has finished (and flushed its logs)."""
+    global _thread
+    thread = _thread
+    if thread is not None and thread is not threading.current_thread():
+        thread.join(timeout)
+        if not thread.is_alive():
+            _thread = None
+
 def shutdown():
     global _shutdown_called
-    if not _started or _shutdown_called:
+    if not _started:
         return
 
-    _shutdown_called = True
-    event = threading.Event()
-    twisted.internet.reactor.callFromThread(_shutdown, event)
-    event.wait(60)
+    # stop() only *requests* shutdown; event is set when stop() is invoked,
+    # not when reactor.run() returns. Join the thread so atexit (and callers)
+    # do not kill the daemon thread before "Main loop terminated." is logged.
+    if not _shutdown_called:
+        _shutdown_called = True
+        event = threading.Event()
+        twisted.internet.reactor.callFromThread(_shutdown, event)
+        event.wait(60)
+
+    _join_reactor_thread(60)
 

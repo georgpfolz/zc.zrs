@@ -551,6 +551,22 @@ it does, it should simply close.
     """
 
 
+def _wait_reactor_log(path='t.log', needles=('Main loop terminated',),
+                      timeout=5.0):
+    """Poll reactor log until expected lines appear (CI race mitigation)."""
+    end = time.time() + timeout
+    text = ''
+    while time.time() < end:
+        try:
+            text = open(path).read().replace('using set_wakeup_fd\n', '')
+        except OSError:
+            text = ''
+        if all(needle in text for needle in needles):
+            return text
+        time.sleep(0.05)
+    return text
+
+
 def crashing_reactor_logs_as_such():
     r"""
 
@@ -568,13 +584,12 @@ to crash:
     ... import zc.zrs.reactor
     ...
     ... logging.getLogger().setLevel(1)
-    ... handler = logging.StreamHandler(open('t.log', 'w'))
+    ... handler = logging.FileHandler('t.log', mode='w')
     ... logging.getLogger().addHandler(handler)
     ... zc.zrs.reactor.reactor()
-    ... time.sleep(0.1)
+    ... time.sleep(0.2)
     ... twisted.internet.reactor.callFromThread(twisted.internet.reactor.crash)
-    ... time.sleep(0.1)
-    ... #logging.error('failed')
+    ... time.sleep(0.2)
     ... ''' % sys.path)
 
 We'll run it:
@@ -588,7 +603,9 @@ It exits with a non-zero exit status:
 
 And we get something in the log to the effect that it closed unexpectedly.
 
-    >>> print(open('t.log').read().replace('using set_wakeup_fd\n', ''), end='')
+    >>> print(_wait_reactor_log(
+    ...     needles=('Main loop terminated',
+    ...              'The twisted reactor quit unexpectedly')), end='')
     Main loop terminated.
     The twisted reactor quit unexpectedly
 
@@ -603,10 +620,10 @@ OTOH, if we exit without crashing:
     ... import zc.zrs.reactor
     ...
     ... logging.getLogger().setLevel(1)
-    ... handler = logging.StreamHandler(open('t.log', 'w'))
+    ... handler = logging.FileHandler('t.log', mode='w')
     ... logging.getLogger().addHandler(handler)
     ... zc.zrs.reactor.reactor()
-    ... time.sleep(0.1)
+    ... time.sleep(0.2)
     ... ''' % sys.path)
 
     >>> p = subprocess.Popen([sys.executable, 't.py'])
@@ -614,7 +631,7 @@ OTOH, if we exit without crashing:
     >>> bool(p.wait())
     False
 
-    >>> print(open('t.log').read().replace('using set_wakeup_fd\n', ''), end='')
+    >>> print(_wait_reactor_log(), end='')
     Main loop terminated.
 
     """
